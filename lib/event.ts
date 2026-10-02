@@ -1,0 +1,3 @@
+import { z } from 'zod';
+export const eventSchema=z.object({id:z.string().uuid(),site:z.string().min(1).max(80),visitorId:z.string().uuid(),sessionId:z.string().uuid(),name:z.string().regex(/^[a-z][a-z0-9_]{0,63}$/),path:z.string().startsWith('/').max(500).transform(p=>p.split(/[?#]/)[0]),referrer:z.string().max(500).optional(),utmSource:z.string().max(100).optional(),utmMedium:z.string().max(100).optional(),utmCampaign:z.string().max(100).optional(),properties:z.record(z.string().max(40),z.union([z.string().max(200),z.number().finite(),z.boolean()])).refine(p=>Object.keys(p).length<=10).optional()});
+export function cleanReferrer(value?:string) { try {return value ? new URL(value).hostname : undefined;}catch{return undefined;} }

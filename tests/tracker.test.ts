@@ -1,0 +1,8 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
+const source=readFileSync('public/tracker.js','utf8');
+function setup(blocked=false){let now=1000000;const storage=new Map();const sent:any[]=[];const listeners:any={};const context:any={Date:{now:()=>now},crypto,URL,URLSearchParams,navigator:{doNotTrack:blocked?'1':'0'},location:{pathname:'/',search:'?utm_source=google'},document:{currentScript:{src:'https://analytics.example/tracker.js',dataset:{site:'moja-strona'}},referrer:'https://google.com/search',addEventListener:()=>{}},localStorage:{getItem:(k:string)=>storage.get(k),setItem:(k:string,v:string)=>storage.set(k,v)},fetch:(_:string,options:any)=>{sent.push(JSON.parse(options.body));return Promise.resolve();},history:{pushState:()=>{},replaceState:()=>{}},addEventListener:(k:string,f:any)=>listeners[k]=f};context.window=context;runInNewContext(source,context);return {context,sent,setTime:(t:number)=>now=t};}
+test('auto pageview, SPA tracking, session renewal and attribution',()=>{const t=setup();assert.equal(t.sent[0].name,'page_view');assert.equal(t.sent[0].utmSource,'google');t.context.location.pathname='/pricing';t.context.history.pushState();assert.equal(t.sent.length,2);assert.equal(t.sent[0].sessionId,t.sent[1].sessionId);t.context.history.replaceState();assert.equal(t.sent.length,2);t.setTime(3000000);t.context.analytics.track('lead_created');assert.notEqual(t.sent[2].sessionId,t.sent[0].sessionId);assert.equal(t.sent[2].visitorId,t.sent[0].visitorId);});
+test('respects Do Not Track',()=>assert.equal(setup(true).sent.length,0));
