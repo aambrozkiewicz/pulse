@@ -82,7 +82,11 @@ W dashboardzie wybierz stronę i kliknij „Dokumentacja integracji i kod dla te
 Dodaj snippet przed `</head>`:
 
 ```html
-<script defer src="https://analytics.twojadomena.pl/tracker.js" data-site="moja-strona"></script>
+<script
+  defer
+  src="https://analytics.twojadomena.pl/tracker.js"
+  data-site="moja-strona"
+></script>
 ```
 
 Tracker wysyła automatycznie `page_view` oraz reaguje na pushState, replaceState i popstate. Nie wysyła parametrów query ani fragmentów ścieżki. Referrer jest sprowadzany przez API do hostname. UTM-y są zapamiętane na czas sesji.
@@ -90,16 +94,18 @@ Tracker wysyła automatycznie `page_view` oraz reaguje na pushState, replaceStat
 Kliknięcia można oznaczyć bez własnego JS:
 
 ```html
-<a href="#contact" data-analytics="cta_clicked" data-analytics-location="hero">Porozmawiajmy</a>
+<a href="#contact" data-analytics="cta_clicked" data-analytics-location="hero"
+  >Porozmawiajmy</a
+>
 ```
 
 Inne zdarzenia:
 
 ```javascript
 // Tylko raz przy pierwszej interakcji z formularzem:
-window.analytics?.track('contact_started');
+window.analytics?.track("contact_started");
 // Dopiero po potwierdzeniu sukcesu wysłania formularza przez backend:
-window.analytics?.track('conversion', { form: 'contact' });
+window.analytics?.track("conversion", { form: "contact" });
 ```
 
 Nie wysyłaj e-maili, nazwisk, telefonów, treści wiadomości, tokenów ani identyfikatorów zamówień w properties/UTM/path. API dopuszcza do 10 prostych properties. Tracker ignoruje DNT i Global Privacy Control przez rezygnację ze zbierania danych, jeśli te sygnały są aktywne. Używa localStorage do identyfikatora odwiedzającego i sesji; jeśli landing wymaga zgody, załaduj snippet dopiero po jej uzyskaniu. Projekt nie implementuje banera zgody.
