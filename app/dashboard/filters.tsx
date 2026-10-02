@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 function FilterSelect({ children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
  return <div className="relative min-w-28 max-w-full">
-  <select {...props} className="h-11 w-full cursor-pointer appearance-none truncate rounded-lg border border-slate-200 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:border-[#1664d8] focus-visible:ring-2 focus-visible:ring-[#1664d8]/15 disabled:cursor-wait disabled:opacity-65 motion-reduce:transition-none md:max-w-60">
+  <select {...props} className="h-11 w-full cursor-pointer appearance-none truncate rounded-lg border border-slate-200 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:border-[#1664d8] focus-visible:ring-2 focus-visible:ring-[#1664d8]/15 disabled:cursor-wait disabled:opacity-65 motion-reduce:transition-none md:max-w-60">
    {children}
   </select>
   <svg aria-hidden="true" className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 16 16" fill="none">

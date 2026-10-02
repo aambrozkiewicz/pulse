@@ -79,7 +79,7 @@ export default function TrafficChart({ series }: { series: Point[] }) {
           <circle cx={selected.x} cy={selected.y} r="4.5" fill="#1664d8" stroke="white" strokeWidth="2" vectorEffect="non-scaling-stroke" />
         </g>}
       </svg>
-      {selected && <div className="pointer-events-none absolute top-0 z-10 min-w-[130px] rounded-xl border border-slate-100 bg-white/95 px-4 py-3 shadow-lg backdrop-blur-sm" style={{ left: `${Math.max(0, Math.min(100, selected.x / width * 100))}%`, transform: `translateX(${selected.x / width < 0.2 ? '0' : selected.x / width > 0.8 ? '-100%' : '-50%'})` }}>
+      {selected && <div className="pointer-events-none absolute top-0 z-10 min-w-[130px] rounded-xl border border-slate-100 bg-white/95 px-4 py-3 backdrop-blur-sm" style={{ left: `${Math.max(0, Math.min(100, selected.x / width * 100))}%`, transform: `translateX(${selected.x / width < 0.2 ? '0' : selected.x / width > 0.8 ? '-100%' : '-50%'})` }}>
         <p className="text-xs text-slate-500">{dateLabel(selected.label)}</p>
         <p className="mt-1 flex items-baseline gap-2"><strong className="text-xl font-semibold tabular-nums text-slate-900">{selected.count.toLocaleString('pl')}</strong><span className="text-xs text-slate-500">odsłon</span></p>
       </div>}
