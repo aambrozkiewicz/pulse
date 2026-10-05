@@ -55,12 +55,13 @@ export default function SiteForm({ site }: { site?: Site }) {
         <input className="mt-2 block w-full max-w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm text-slate-900 placeholder:text-slate-400 read-only:bg-slate-50 read-only:text-slate-500"
           name="origins"
           required
-          placeholder="https://example.com, https://www.example.com"
+          placeholder="https://*.eatally.pl, https://mojlunch.pl"
           defaultValue={site?.origins.join(", ")}
         />
         <small className="mt-2 block text-xs leading-relaxed text-slate-500">
           Oddziel adresy przecinkami. Podaj protokół i domenę, bez ścieżki i
-          końcowego ukośnika.
+          końcowego ukośnika. Do 100 adresów. Zapis https://*.eatally.pl dopuszcza
+          wszystkie subdomeny; samą domenę eatally.pl dodaj osobno.
         </small>
       </label>
       <label className="mb-5 block text-sm font-medium text-slate-700">

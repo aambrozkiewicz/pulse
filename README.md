@@ -19,6 +19,24 @@ npm run dev
 
 Zaloguj się na http://localhost:3000/login. W dashboardzie kliknij „Dodaj stronę”, wpisz dowolną nazwę, klucz (np. `moja-strona`) i originy (np. `https://example.com, https://www.example.com`). Ustaw nazwę zdarzenia konwersji oraz opcjonalną listę kroków do pokazania w dashboardzie. Origin to protokół + host + opcjonalny port, bez końcowego `/`. Dla lokalnego testu dodaj origin lokalnego landingu, np. `http://localhost:8080`.
 
+## Dane demo do testowania
+
+Po skonfigurowaniu `.env` i wykonaniu migracji uruchom:
+
+```bash
+npm run demo
+```
+
+Komenda tworzy osobną stronę „Demo — sklep internetowy” (`pulse-demo`) i dodaje 12 000 sesji z ostatnich 180 dni. Generuje odsłony, różne źródła ruchu i kampanie UTM, powracających odwiedzających oraz kroki zakupowe i konwersje. Dane obejmują też poprzednie okresy dla porównań 7, 30 i 90 dni. Zaloguj się i otwórz `/dashboard?site=pulse-demo&days=30` albo wybierz stronę Demo z listy.
+
+```bash
+npm run demo -- --days 60 --sessions 25000
+npm run demo -- --dry-run
+npm run demo -- --help
+```
+
+`--days` przyjmuje 1–365, a `--sessions` 1–100000. `--dry-run` generuje podsumowanie bez połączenia i zapisu do bazy. Komenda korzysta z `DATABASE_URL` w `.env`. Nie modyfikuje innych stron ani ich danych; kolejne uruchomienia dodają nową porcję zdarzeń do strony demo. Zdarzenia mają `properties.demo: true`. Nie tworzy konta administratora — użyj `npm run admin`, jeśli jeszcze go nie masz.
+
 ## VPS Ubuntu — Node.js + supervisord + Nginx
 
 1. Przygotuj Node.js 22+, PostgreSQL i bazę. Konto aplikacji powinno być właścicielem własnej bazy/schema (unikniesz błędu permission denied for schema public).
@@ -74,6 +92,18 @@ sudo supervisorctl restart pulse
 Zrób backup PostgreSQL przed migracjami. Repo zawiera inicjalną migrację. Nowe modele: `npm run db:migrate -- --name opis_zmiany` lokalnie; na produkcji zawsze `npm run db:deploy`.
 
 ## Integracja dowolnej strony
+
+### Wiele domen pod jedną stroną — Eatally
+
+Utwórz jedną stronę z kluczem `eatally`. W dozwolonych adresach wpisz np. `https://*.eatally.pl, https://eatally.pl, https://mojlunch.pl`. Jeśli potrzebujesz również subdomen MojLunch, dodaj `https://*.mojlunch.pl`. Na każdej stronie klienta używaj tego samego snippetu z `data-site="eatally"`.
+
+Wildcard obejmuje wszystkie poziomy subdomen, ale nie domenę główną. Protokół i port muszą pasować; można podać maksymalnie 100 adresów lub wzorców. API zapisuje hostname z nagłówka Origin przy każdym nowym zdarzeniu — aktualizacja trackera nie jest potrzebna.
+
+Dashboard pokazuje zestawienie domen z odwiedzającymi, odsłonami i liczbą zdarzeń konwersji. Filtr „Domena” obejmuje wszystkie metryki, wykresy, źródła, strony, zdarzenia, kroki i porównanie z poprzednim okresem. Kliknięcie domeny w zestawieniu ustawia filtr. Zmiana strony resetuje wybraną domenę.
+
+Stare zdarzenia bez domeny są widoczne w „Wszystkie domeny” oraz „Brak danych o domenie”; migracja nie przypisuje im domeny na podstawie obecnej konfiguracji. Identyfikatory odwiedzających są przechowywane osobno dla każdego originu, więc ta sama osoba na dwóch domenach będzie zwykle liczona dwa razy. Filtr łączy dane według hostname, niezależnie od protokołu i portu.
+
+Przy aktualizacji istniejącej instalacji uruchom `npm run db:deploy` przed uruchomieniem nowej wersji aplikacji, aby dodać pole domeny i indeks.
 
 Istniejącą stronę zmienisz przyciskiem „Edytuj stronę”. Klucz jest stały, żeby zachować działanie trackera; dodawanie nowej strony nie nadpisuje istniejącej.
 

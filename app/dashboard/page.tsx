@@ -4,12 +4,15 @@ import { Prisma } from "@prisma/client";
 import Link from "next/link";
 import DashboardFilters from "./filters";
 import TrafficChart from "./traffic-chart";
+import MetricCards from "./metric-cards";
+import { metricPeriods } from "@/lib/metrics";
+import { domainFilter, unknownDomain } from "@/lib/domain-filter";
 export const dynamic = "force-dynamic";
 type Row = { label: string; count: bigint };
 export default async function Dashboard({
   searchParams,
 }: {
-  searchParams: Promise<{ site?: string; days?: string }>;
+  searchParams: Promise<{ site?: string; days?: string; domain?: string }>;
 }) {
   const user = await requireUser();
   const params = await searchParams;
@@ -67,12 +70,27 @@ export default async function Dashboard({
         </section>
       </main>
     );
-  const start = new Date();
-  start.setUTCHours(0, 0, 0, 0);
-  start.setUTCDate(start.getUTCDate() - days + 1);
-  const end = new Date();
-  end.setUTCDate(end.getUTCDate() + 1);
-  end.setUTCHours(0, 0, 0, 0);
+  const { start, end, previousStart } = metricPeriods(days);
+  const storedDomains = await db.$queryRaw<{ domain: string | null }[]>(
+    Prisma.sql`SELECT DISTINCT "domain" FROM "Event" WHERE "siteId"=${site.id} ORDER BY "domain" ASC`,
+  );
+  const domains = storedDomains.map(({ domain }) => ({
+    value: domain ?? unknownDomain,
+    label: domain ?? "Brak danych o domenie",
+  }));
+  const domain = params.domain ?? "";
+  if (domain && !domains.some((item) => item.value === domain))
+    domains.push({
+      value: domain,
+      label: domain === unknownDomain ? "Brak danych o domenie" : domain,
+    });
+  const domainClause = domainFilter(domain);
+  let domainRows: {
+    domain: string | null;
+    visitors: bigint;
+    views: bigint;
+    leads: bigint;
+  }[] = [];
   let totals = {
       visitors: 0n,
       sessions: 0n,
@@ -84,11 +102,15 @@ export default async function Dashboard({
     pages: Row[] = [],
     events: Row[] = [],
     daily: Row[] = [];
+  let previousTotals = { ...totals };
   if (site) {
-    const filter = Prisma.sql`"siteId"=${site.id} AND "createdAt">=${start} AND "createdAt"<${end}`;
-    const [summary, s, p, e, d] = await Promise.all([
+    const filter = Prisma.sql`"siteId"=${site.id} AND "createdAt">=${start} AND "createdAt"<${end} ${domainClause}`;
+    const [summary, previousSummary, s, p, e, d, hosts] = await Promise.all([
       db.$queryRaw<(typeof totals)[]>(
         Prisma.sql`SELECT COUNT(DISTINCT "visitorId") AS visitors,COUNT(DISTINCT "sessionId") AS sessions,COUNT(*) FILTER(WHERE name='page_view') AS views,COUNT(*) FILTER(WHERE name=${site.conversionEvent}) AS leads,COUNT(DISTINCT "visitorId") FILTER(WHERE name=${site.conversionEvent}) AS converted FROM "Event" WHERE ${filter}`,
+      ),
+      db.$queryRaw<(typeof totals)[]>(
+        Prisma.sql`SELECT COUNT(DISTINCT "visitorId") AS visitors,COUNT(DISTINCT "sessionId") AS sessions,COUNT(*) FILTER(WHERE name='page_view') AS views,COUNT(*) FILTER(WHERE name=${site.conversionEvent}) AS leads,COUNT(DISTINCT "visitorId") FILTER(WHERE name=${site.conversionEvent}) AS converted FROM "Event" WHERE "siteId"=${site.id} AND "createdAt">=${previousStart} AND "createdAt"<${start} ${domainClause}`,
       ),
       db.$queryRaw<Row[]>(
         Prisma.sql`SELECT COALESCE(NULLIF("utmSource",''),NULLIF(referrer,''),'Direct') AS label,COUNT(DISTINCT "sessionId") AS count FROM "Event" WHERE ${filter} GROUP BY 1 ORDER BY count DESC LIMIT 10`,
@@ -102,12 +124,17 @@ export default async function Dashboard({
       db.$queryRaw<Row[]>(
         Prisma.sql`SELECT TO_CHAR("createdAt" AT TIME ZONE 'UTC','YYYY-MM-DD') AS label,COUNT(*) AS count FROM "Event" WHERE ${filter} AND name='page_view' GROUP BY 1 ORDER BY 1`,
       ),
+      db.$queryRaw<typeof domainRows>(
+        Prisma.sql`SELECT "domain",COUNT(DISTINCT "visitorId") AS visitors,COUNT(*) FILTER(WHERE name='page_view') AS views,COUNT(*) FILTER(WHERE name=${site.conversionEvent}) AS leads FROM "Event" WHERE ${filter} GROUP BY "domain" ORDER BY views DESC, "domain" ASC`,
+      ),
     ]);
     totals = summary[0];
+    previousTotals = previousSummary[0];
     sources = s;
     pages = p;
     events = e;
     daily = d;
+    domainRows = hosts;
   }
   const series = Array.from({ length: days }, (_, i) => {
     const date = new Date(start);
@@ -169,7 +196,7 @@ export default async function Dashboard({
           <small className="text-xs leading-relaxed text-slate-500">
             OVERVIEW
           </small>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <div className="flex flex-col gap-x-6 gap-y-2">
             <h1 className="min-w-0 break-words text-3xl font-bold tracking-tight text-slate-900 md:text-[38px]">
               {site?.name || "Twoje strony"}
             </h1>
@@ -197,36 +224,47 @@ export default async function Dashboard({
           sites={sites.map(({ key, name }) => ({ key, name }))}
           siteKey={site.key}
           days={days}
+          domains={domains}
+          domain={domain}
         />
       </div>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 [&_h2]:mt-4 [&_h2]:mb-0 [&_h2]:text-4xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_h2]:tabular-nums">
-        {[
-          ["Odwiedzający", Number(totals.visitors)],
-          ["Sesje", Number(totals.sessions)],
-          ["Odsłony", Number(totals.views)],
-          [
-            "Konwersja",
-            totals.visitors
-              ? (
-                  (Number(totals.converted) / Number(totals.visitors)) *
-                  100
-                ).toFixed(1) + "%"
-              : "0%",
-          ],
-        ].map(([name, value]) => (
-          <section
-            className="mb-5 rounded-2xl border border-slate-200 bg-white p-6"
-            key={name}
-          >
-            <small className="text-xs leading-relaxed text-slate-500">
-              {name}
-            </small>
-            <h2 className="mb-4 text-lg font-semibold text-slate-900">
-              {value}
-            </h2>
-          </section>
-        ))}
-      </div>
+      <MetricCards
+        days={days}
+        previousPeriod={`${previousStart.toLocaleDateString("pl-PL", { timeZone: "UTC" })} – ${new Date(start.getTime() - 1).toLocaleDateString("pl-PL", { timeZone: "UTC" })}`}
+        metrics={[
+          {
+            name: "Odwiedzający",
+            current: Number(totals.visitors),
+            previous: Number(previousTotals.visitors),
+            icon: "visitors",
+          },
+          {
+            name: "Sesje",
+            current: Number(totals.sessions),
+            previous: Number(previousTotals.sessions),
+            icon: "sessions",
+          },
+          {
+            name: "Odsłony",
+            current: Number(totals.views),
+            previous: Number(previousTotals.views),
+            icon: "views",
+          },
+          {
+            name: "Konwersja",
+            current: totals.visitors
+              ? (Number(totals.converted) / Number(totals.visitors)) * 100
+              : 0,
+            previous: previousTotals.visitors
+              ? (Number(previousTotals.converted) /
+                  Number(previousTotals.visitors)) *
+                100
+              : 0,
+            icon: "conversion",
+            percentagePoints: true,
+          },
+        ]}
+      />
       <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-6">
         <h2 className="mb-4 text-lg font-semibold text-slate-900">
           Ruch w czasie
@@ -234,7 +272,65 @@ export default async function Dashboard({
         <p className="my-3 leading-relaxed text-slate-500">
           Odsłony dziennie · UTC · {days} dni
         </p>
-        <TrafficChart key={`${site.id}-${days}`} series={series} />
+        <TrafficChart key={`${site.id}-${days}-${domain}`} series={series} />
+      </section>
+      <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-6">
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">Domeny</h2>
+        {domainRows.length ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-500">
+                  <th scope="col" className="py-3 pr-4">
+                    Domena
+                  </th>
+                  <th scope="col" className="px-3 py-3 text-right">
+                    Odwiedzający
+                  </th>
+                  <th scope="col" className="px-3 py-3 text-right">
+                    Odsłony
+                  </th>
+                  <th scope="col" className="pl-3 py-3 text-right">
+                    Konwersje
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {domainRows.map((row) => (
+                  <tr
+                    key={row.domain ?? unknownDomain}
+                    className="border-b border-slate-100 last:border-0"
+                  >
+                    <th
+                      scope="row"
+                      className="py-4 pr-4 font-normal [overflow-wrap:anywhere]"
+                    >
+                      <Link
+                        className="text-[#1664d8] underline underline-offset-4"
+                        href={`/dashboard?${new URLSearchParams({ site: site.key, days: String(days), domain: row.domain ?? unknownDomain })}`}
+                      >
+                        {row.domain ?? "Brak danych o domenie"}
+                      </Link>
+                    </th>
+                    <td className="px-3 py-4 text-right tabular-nums">
+                      {Number(row.visitors).toLocaleString("pl")}
+                    </td>
+                    <td className="px-3 py-4 text-right tabular-nums">
+                      {Number(row.views).toLocaleString("pl")}
+                    </td>
+                    <td className="pl-3 py-4 text-right tabular-nums">
+                      {Number(row.leads).toLocaleString("pl")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="my-3 leading-relaxed text-slate-500">
+            Brak danych w tym okresie.
+          </p>
+        )}
       </section>
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {table("Źródła ruchu", sources, "Sesje wg źródła")}

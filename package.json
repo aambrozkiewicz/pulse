@@ -12,6 +12,7 @@
     "db:deploy": "prisma migrate deploy",
     "admin": "node --import tsx scripts/admin.ts",
     "cleanup": "node --import tsx scripts/cleanup.ts",
+    "demo": "node --import tsx scripts/demo.ts",
     "test": "node --import tsx --test tests/*.test.ts"
   },
   "keywords": [],

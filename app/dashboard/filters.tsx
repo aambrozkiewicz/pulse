@@ -15,7 +15,7 @@ function FilterSelect({ children, ...props }: SelectHTMLAttributes<HTMLSelectEle
 }
 
 type SiteOption = {key: string; name: string};
-export default function DashboardFilters({sites, siteKey, days}: {sites: SiteOption[]; siteKey: string; days: number}) {
+export default function DashboardFilters({sites, siteKey, days, domains, domain}: {sites: SiteOption[]; siteKey: string; days: number; domains: {value: string; label: string}[]; domain: string}) {
  const router = useRouter();
  const searchParams = useSearchParams();
  const [pending, startTransition] = useTransition();
@@ -24,6 +24,7 @@ export default function DashboardFilters({sites, siteKey, days}: {sites: SiteOpt
   params.set('site', siteKey);
   params.set('days', String(days));
   params.set(name, value);
+  if (name === 'site' || (name === 'domain' && !value)) params.delete('domain');
   startTransition(() => router.replace(`/dashboard?${params.toString()}`, {scroll: false}));
  }
  return <div className="flex shrink-0 flex-wrap items-center gap-3" aria-busy={pending}>
@@ -32,6 +33,10 @@ export default function DashboardFilters({sites, siteKey, days}: {sites: SiteOpt
   </FilterSelect>
   <FilterSelect name="days" aria-label="Zakres czasu" value={days} disabled={pending} onChange={event => apply('days', event.target.value)}>
    <option value="7">7 dni</option><option value="30">30 dni</option><option value="90">90 dni</option>
+  </FilterSelect>
+  <FilterSelect name="domain" aria-label="Domena" value={domain} disabled={pending} onChange={event => apply('domain', event.target.value)}>
+   <option value="">Wszystkie domeny</option>
+   {domains.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
   </FilterSelect>
   <span className="sr-only" role="status">{pending ? 'Aktualizowanie danych…' : ''}</span>
  </div>;

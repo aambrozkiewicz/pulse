@@ -14,3 +14,9 @@ test('only accepts configured HTTP origins without paths', () => {
  for (const origin of ['https://example.com/path', 'https://example.com/', 'ftp://example.com']) assert.equal(siteConfigSchema.safeParse({...config, origins: [origin]}).success, false);
  assert.equal(siteConfigSchema.safeParse({...config, origins: ['http://localhost:8080']}).success, true);
 });
+test('accepts wildcard origins and up to 100 client domains', () => {
+ assert.equal(siteConfigSchema.safeParse({...config, origins: ['https://*.eatally.pl', 'https://mojlunch.pl']}).success, true);
+ const origins = Array.from({length: 100}, (_, i) => `https://client${i}.example.com`);
+ assert.equal(siteConfigSchema.safeParse({...config, origins}).success, true);
+ assert.equal(siteConfigSchema.safeParse({...config, origins: [...origins, 'https://extra.example.com']}).success, false);
+});
