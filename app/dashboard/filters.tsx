@@ -34,8 +34,6 @@ type Props = {
 export default function DashboardFilters({ sites, siteKey, domains, domain, range, timeZone, from, to, today, query }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [draftFrom, setDraftFrom] = useState(from);
-  const [draftTo, setDraftTo] = useState(to);
   const [error, setError] = useState<string>();
   const errorId = useId();
   function apply(changes: Record<string, string>) {
@@ -60,16 +58,19 @@ export default function DashboardFilters({ sites, siteKey, domains, domain, rang
     </div>
     {range === "custom" && <form className="mt-4 border-t border-slate-100 pt-4" onSubmit={event => {
       event.preventDefault();
+      const form = new FormData(event.currentTarget);
+      const draftFrom = String(form.get("from") ?? "");
+      const draftTo = String(form.get("to") ?? "");
       const message = customRangeError(draftFrom, draftTo, today);
       setError(message);
       if (!message) apply({ range: "custom", from: draftFrom, to: draftTo });
     }}>
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-slate-500">Od
-          <input type="date" name="from" required min="2000-01-01" max={today} value={draftFrom} disabled={pending} aria-describedby={error ? errorId : undefined} aria-invalid={!!error} onChange={event => { setDraftFrom(event.target.value); setError(undefined); }} className="h-11 min-w-0 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 focus-visible:ring-2 focus-visible:ring-[#1664d8]/20" />
+          <input type="date" name="from" required min="2000-01-01" max={today} defaultValue={from} disabled={pending} aria-describedby={error ? errorId : undefined} aria-invalid={!!error} onChange={() => setError(undefined)} className="h-11 min-w-0 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 focus-visible:ring-2 focus-visible:ring-[#1664d8]/20" />
         </label>
         <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-slate-500">Do
-          <input type="date" name="to" required min="2000-01-01" max={today} value={draftTo} disabled={pending} aria-describedby={error ? errorId : undefined} aria-invalid={!!error} onChange={event => { setDraftTo(event.target.value); setError(undefined); }} className="h-11 min-w-0 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 focus-visible:ring-2 focus-visible:ring-[#1664d8]/20" />
+          <input type="date" name="to" required min="2000-01-01" max={today} defaultValue={to} disabled={pending} aria-describedby={error ? errorId : undefined} aria-invalid={!!error} onChange={() => setError(undefined)} className="h-11 min-w-0 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 focus-visible:ring-2 focus-visible:ring-[#1664d8]/20" />
         </label>
         <button disabled={pending} className="h-11 rounded-lg bg-[#1664d8] px-4 text-sm font-semibold text-white hover:bg-[#1664d8]/90 disabled:opacity-65">Zastosuj zakres</button>
         <span className="pb-3 text-xs text-slate-500">Do 366 dni, obie daty włącznie.</span>
