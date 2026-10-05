@@ -147,9 +147,13 @@ Przy CSP dopuść domenę analytics w `script-src` i `connect-src`. Transport to
 - Odwiedzający: distinct visitorId w wybranym okresie, nie faktyczne osoby. Inna przeglądarka/wyczyszczony localStorage to nowy odwiedzający.
 - Sesje: distinct sessionId w wybranym okresie; po 30 min bezczynności tracker tworzy nową.
 - Konwersja: odwiedzający ze zdarzeniem skonfigurowanym jako konwersja / wszyscy odwiedzający z dowolnym zdarzeniem w okresie. Liczba wysłanych zdarzeń konwersji jest prezentowana osobno.
-- Źródła: distinct sesje wg UTM source, a następnie referrer host, a następnie Direct.
+- Źródła: każda sesja jest przypisana do źródła swojego pierwszego zdarzenia w wybranym okresie i domenie: UTM source, następnie referrer host, następnie Direct. Udziały są liczone względem wszystkich sesji, także poza widocznym top 10.
 - „Kroki na stronie”: liczba odwiedzających z każdym zdarzeniem w okresie. Nie sprawdza kolejności ani przynależności do kohorty; to uproszczony widok kroków, nie ścisła analiza lejka.
-- Wykres i okresy używają UTC, obejmując bieżący dzień.
+- Zakresy: 7/30/90 dni, Dzisiaj, Wczoraj, Ten miesiąc (do dzisiaj) albo własny zakres z kalendarza (do 366 dni, daty włącznie). Starsze linki z `days=7/30/90` nadal działają. Niepoprawny zakres z URL pokazuje komunikat i ostatnie 30 dni.
+- Strefa czasowa: UTC (domyślnie) albo Europe/Warsaw. Granice okresów i grupowanie dni na wykresie używają tej samej strefy, uwzględniając zmianę czasu. Porównanie obejmuje poprzednią, równą liczbę dni kalendarzowych. Bieżący dzień jest niepełny i jest oznaczony w dashboardzie.
+- Kliknięcie źródła, ścieżki lub zdarzenia filtruje sesje w wybranym okresie i domenie. Ścieżka wymaga odsłony tej strony, zdarzenie — wystąpienia tego zdarzenia; wszystkie aktywne warunki muszą być spełnione w tej samej sesji, ale mogą dotyczyć różnych zdarzeń. Dashboard zachowuje pozostałe zdarzenia pasujących sesji, aby nadal pokazywać ich konwersje i kroki. Poprzedni okres kwalifikuje sesje niezależnie.
+- Filtry działają w całym dashboardzie, łączą się ze sobą i są zapisane w URL. Można usuwać pojedyncze filtry albo wyczyścić wszystkie. Zmiana strony resetuje domenę, źródło, ścieżkę i zdarzenie, zachowując zakres i strefę.
+- Paski i procenty pokazują udział sesji dla źródeł, odsłon dla stron i domen oraz odwiedzających dla zdarzeń. Udziały zdarzeń mogą się nakładać, bo odwiedzający może wykonać kilka różnych zdarzeń.
 - Administrator tworzy/aktualizuje stronę po kluczu: nazwa, originy, zdarzenie konwersji i do 10 unikalnych kroków. Pusta lista ukrywa kroki. Zmiana originów zastępuje całą listę. Własne zdarzenia są zbierane niezależnie od listy kroków.
 
 ## Bezpieczeństwo i utrzymanie
@@ -170,7 +174,13 @@ npm run typecheck
 npm run build
 ```
 
-Testy sprawdzają walidację payloadu, usuwanie query/hash, referrer, tracker SPA, odnawianie sesji, atrybucję i DNT. Przed użyciem na VPS przetestuj logowanie, wylogowanie, stronę bez sesji oraz wysyłkę zdarzenia z prawdziwego landingu z dozwolonego originu. Dodaj testy end-to-end na swojej instancji PostgreSQL.
+Testy sprawdzają zakresy kalendarzowe, zmianę czasu w Warszawie, zachowanie filtrów w URL, walidację payloadu, usuwanie query/hash, referrer, tracker SPA, odnawianie sesji, atrybucję i DNT. Przed użyciem na VPS przetestuj logowanie, wylogowanie, stronę bez sesji oraz wysyłkę zdarzenia z prawdziwego landingu z dozwolonego originu. Opcjonalny test zapytań dashboardu uruchom na osobnej bazie testowej:
+
+```bash
+PULSE_TEST_DATABASE_URL=postgresql://user:password@localhost/pulse_test npm test
+```
+
+Test używa tymczasowej tabeli w transakcji i sprawdza zachowanie konwersji przy łączeniu filtrów, izolację stron i domen oraz granice dni. Bez tej zmiennej test SQL jest pomijany.
 
 ## Style interfejsu
 

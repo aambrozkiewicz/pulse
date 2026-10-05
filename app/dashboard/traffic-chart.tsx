@@ -19,7 +19,7 @@ export default function TrafficChart({ series }: { series: Point[] }) {
   const ceiling = Math.ceil(peak / magnitude) * magnitude;
   const points = series.map((point, index) => ({
     ...point,
-    x: left + index / Math.max(1, series.length - 1) * (right - left),
+    x: series.length === 1 ? (left + right) / 2 : left + index / (series.length - 1) * (right - left),
     y: bottom - point.count / ceiling * (bottom - top),
   }));
   if (!points.length) return null;
@@ -73,6 +73,7 @@ export default function TrafficChart({ series }: { series: Point[] }) {
         })}
         <path d={`${line} L ${points.at(-1)!.x} ${bottom} L ${points[0].x} ${bottom} Z`} fill={`url(#${id}-fill)`} />
         <path d={line} fill="none" stroke={`url(#${id}-line)`} strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+        {points.length === 1 && <circle cx={points[0].x} cy={points[0].y} r="4.5" fill="#1664d8" />}
         {selected && <g>
           <line x1={selected.x} x2={selected.x} y1={top} y2={bottom} stroke="#1664d8" strokeOpacity="0.3" strokeDasharray="4 5" vectorEffect="non-scaling-stroke" />
           <circle cx={selected.x} cy={selected.y} r="10" fill="#1664d8" fillOpacity="0.1" />
@@ -84,8 +85,8 @@ export default function TrafficChart({ series }: { series: Point[] }) {
         <p className="mt-1 flex items-baseline gap-2"><strong className="text-xl font-semibold tabular-nums text-slate-900">{selected.count.toLocaleString('pl')}</strong><span className="text-xs text-slate-500">odsłon</span></p>
       </div>}
     </div>
-    <div className="mt-3 flex justify-between pl-[4.8%] pr-[1.6%] text-xs text-slate-400">
-      {[0, Math.floor((points.length - 1) / 2), points.length - 1].map((index, position) => <span key={position}>{dateLabel(points[index].label)}</span>)}
+    <div className={`mt-3 flex ${points.length === 1 ? "justify-center" : "justify-between"} pl-[4.8%] pr-[1.6%] text-xs text-slate-400`}>
+      {Array.from(new Set([0, Math.floor((points.length - 1) / 2), points.length - 1])).map((index, position) => <span key={position}>{dateLabel(points[index].label)}</span>)}
     </div>
     <span className="sr-only" aria-live="polite">{selected ? `${selected.label}: ${selected.count} odsłon` : ''}</span>
     <details className="sr-only focus-within:not-sr-only"><summary>Dane wykresu</summary><ul>{series.map(point => <li key={point.label}>{point.label}: {point.count} odsłon</li>)}</ul></details>
