@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import Link from "next/link";
 import DashboardFilters from "./filters";
+import DashboardHeader from "./dashboard-header";
 import TrafficChart from "./traffic-chart";
 import MetricCards from "./metric-cards";
 import { metricPeriods } from "@/lib/metrics";
@@ -24,27 +25,7 @@ export default async function Dashboard({
   if (!site)
     return (
       <main className="mx-auto w-full max-w-[1180px] p-5 md:p-8">
-        <header className="flex flex-col items-start justify-between gap-4 border-b border-slate-200 pb-7 md:flex-row md:items-center">
-          <div className="text-3xl font-extrabold tracking-tight text-[#1664d8] [&_span]:mt-2 [&_span]:block [&_span]:text-[10px] [&_span]:font-semibold [&_span]:tracking-[0.2em] [&_span]:text-slate-500">
-            ◉ pulse<span>TWÓJ RUCH. TWOJE DANE.</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 md:gap-5">
-            <Link
-              className="inline-flex items-center justify-center rounded-lg border border-transparent px-5 py-3 text-sm font-semibold transition-colors motion-reduce:transition-none disabled:cursor-wait disabled:opacity-65 bg-[#1664d8]/5 text-[#1664d8] hover:border-[#1664d8]/25 hover:bg-[#1664d8]/10"
-              href="/dashboard/sites/new"
-            >
-              Dodaj stronę
-            </Link>
-            <span className="text-sm text-slate-500 [overflow-wrap:anywhere]">
-              {user.email}
-            </span>
-            <form action="/api/logout" method="post">
-              <button className="inline-flex items-center justify-center rounded-lg border border-transparent px-5 py-3 text-sm font-semibold transition-colors motion-reduce:transition-none disabled:cursor-wait disabled:opacity-65 bg-[#1664d8]/5 text-[#1664d8] hover:border-[#1664d8]/25 hover:bg-[#1664d8]/10">
-                Wyloguj
-              </button>
-            </form>
-          </div>
-        </header>
+        <DashboardHeader email={user.email} />
         <section className="mx-auto my-8 max-w-[720px] rounded-2xl border border-slate-200 border-t-4 border-t-sky-400 bg-white p-7 md:my-12 md:p-12 [&_p]:max-w-[540px] [&_a]:my-3">
           <small className="text-xs leading-relaxed text-slate-500">
             TWÓJ PIERWSZY KROK
@@ -170,27 +151,7 @@ export default async function Dashboard({
   }
   return (
     <main className="mx-auto w-full max-w-[1180px] p-5 md:p-8">
-      <header className="flex flex-col items-start justify-between gap-4 border-b border-slate-200 pb-7 md:flex-row md:items-center">
-        <div className="text-3xl font-extrabold tracking-tight text-[#1664d8] [&_span]:mt-2 [&_span]:block [&_span]:text-[10px] [&_span]:font-semibold [&_span]:tracking-[0.2em] [&_span]:text-slate-500">
-          ◉ pulse<span>TWÓJ RUCH. TWOJE DANE.</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 md:gap-5">
-          <Link
-            className="inline-flex items-center justify-center rounded-lg border border-transparent px-5 py-3 text-sm font-semibold transition-colors motion-reduce:transition-none disabled:cursor-wait disabled:opacity-65 bg-[#1664d8]/5 text-[#1664d8] hover:border-[#1664d8]/25 hover:bg-[#1664d8]/10"
-            href="/dashboard/sites/new"
-          >
-            Dodaj stronę
-          </Link>
-          <span className="text-sm text-slate-500 [overflow-wrap:anywhere]">
-            {user.email}
-          </span>
-          <form action="/api/logout" method="post">
-            <button className="inline-flex items-center justify-center rounded-lg border border-transparent px-5 py-3 text-sm font-semibold transition-colors motion-reduce:transition-none disabled:cursor-wait disabled:opacity-65 bg-[#1664d8]/5 text-[#1664d8] hover:border-[#1664d8]/25 hover:bg-[#1664d8]/10">
-              Wyloguj
-            </button>
-          </form>
-        </div>
-      </header>
+      <DashboardHeader email={user.email} />
       <div className="flex flex-col items-start justify-between gap-2 py-8 md:flex-row md:items-end">
         <div>
           <small className="text-xs leading-relaxed text-slate-500">
